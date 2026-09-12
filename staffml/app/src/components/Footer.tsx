@@ -1,0 +1,94 @@
+import Link from "next/link";
+import { ECOSYSTEM_BASE } from "../lib/env";
+import { RELEASE_ID, RELEASE_HASH, BUILD_DATE } from "../lib/stats";
+
+/**
+ * Page-end footer with a stable cross-link back to the ML Systems textbook.
+ *
+ * Per-question book links now ship via BookRefCard (topic → chapter, derived
+ * from schema/topic_chapter_map.yaml and build-link-checked against live
+ * mlsysbook.ai chapter URLs). This footer remains the site-level funnel: the
+ * top-of-page EcosystemBar covers discovery; this footer covers intent (the
+ * user finished reading and wants to learn more).
+ *
+ * Intentionally minimal: one attribution row, low contrast, no dropdowns.
+ */
+export default function Footer() {
+  // Format the build date in UTC (not the viewer's local timezone). With
+  // Next's static export the HTML is generated at build time and hydrates
+  // on the client whenever the user visits — without `timeZone: "UTC"` the
+  // build server and the client format the same ISO instant differently
+  // near day/year boundaries (e.g. `2026-12-31T23:30:00Z` reads as
+  // "Dec 31, 2026" on a UTC build server and "Jan 1, 2027" in a UTC+1
+  // client), producing a hydration mismatch warning AND a wrong label.
+  // Same fix as PR #1843 for PaperCitationCard.
+  const buildLabel = new Date(BUILD_DATE).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  const shortHash = RELEASE_HASH.slice(0, 7);
+  return (
+    <footer className="border-t border-border mt-12 py-6 px-4 lg:px-6 text-xs text-textTertiary">
+      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row gap-2 sm:gap-4 sm:items-center sm:justify-between">
+        <p className="leading-relaxed">
+          StaffML is part of the{" "}
+          <a
+            href={ECOSYSTEM_BASE}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-textSecondary hover:text-accentBlue font-medium underline-offset-2 hover:underline"
+          >
+            Machine Learning Systems
+          </a>{" "}
+          textbook ecosystem. Questions are grounded in the book&rsquo;s
+          principles of quantitative ML systems reasoning.
+        </p>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 shrink-0">
+          <a
+            href={ECOSYSTEM_BASE}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-textSecondary transition-colors"
+          >
+            Read the book
+          </a>
+          <a
+            href={`${ECOSYSTEM_BASE}/vol1/`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-textSecondary transition-colors"
+          >
+            Volume I
+          </a>
+          <a
+            href={`${ECOSYSTEM_BASE}/vol2/`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-textSecondary transition-colors"
+          >
+            Volume II
+          </a>
+          <a
+            href="https://github.com/harvard-edge/cs249r_book"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-textSecondary transition-colors"
+          >
+            GitHub
+          </a>
+          <Link
+            href="/about#release"
+            className="font-mono hover:text-textSecondary transition-colors"
+            title={`Vault v${RELEASE_ID} · built ${buildLabel} · hash ${shortHash}`}
+            aria-label={`Vault release v${RELEASE_ID}, built ${buildLabel}`}
+          >
+            Vault v{RELEASE_ID}
+            <span className="text-textMuted/70"> · {buildLabel}</span>
+          </Link>
+        </div>
+      </div>
+    </footer>
+  );
+}

@@ -1,0 +1,37 @@
+// =============================================================================
+// VOLUME I STYLESHEET - Harvard Crimson Theme
+// =============================================================================
+// Entry point for Volume I: Introduction to Machine Learning Systems
+// =============================================================================
+
+/*-- scss:defaults --*/
+
+// Typography defaults — declared in the defaults layer so Bootstrap picks
+// these up at compile time. Without this, Bootstrap falls back to system-ui
+// (San Francisco on macOS) and the navbar text renders heavier than the
+// other ecosystem subsites which use Inter via shared/config/site-head.html.
+$font-family-sans-serif: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+$font-family-monospace: 'JetBrains Mono', 'Fira Code', monospace;
+
+/*-- scss:rules --*/
+@import 'themes/theme-harvard';
+@import 'base-styles';
+
+// Same spacing + duplicate-empty-header handling as vol2 (see style-vol2.scss).
+main#quarto-document-content.page-columns.page-full {
+  > header#title-block-header.quarto-title-block {
+    h1.title,
+    .quarto-title h1.title {
+      display: none !important;
+    }
+    margin-block-end: 0.35rem;
+    padding-bottom: 0;
+  }
+  > header#title-block-header.quarto-title-block + header#title-block-header {
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+}

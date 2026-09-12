@@ -1,0 +1,94 @@
+{
+    "projectName": "MLSysBook - Hardware Kits",
+    "projectOwner": "harvard-edge",
+    "repoType": "github",
+    "repoHost": "https://github.com",
+    "files": [
+        "README.md"
+    ],
+    "imageSize": 80,
+    "commit": false,
+    "commitConvention": "angular",
+    "contributorsPerLine": 7,
+    "linkToUsage": false,
+    "skipCi": true,
+    "contributors": [
+        {
+            "login": "Mjrovai",
+            "name": "Marcelo Rovai",
+            "avatar_url": "https://avatars.githubusercontent.com/Mjrovai",
+            "profile": "https://github.com/Mjrovai",
+            "contributions": [
+                "doc",
+                "code",
+                "design",
+                "tutorial"
+            ]
+        },
+        {
+            "login": "profvjreddi",
+            "name": "Vijay Janapa Reddi",
+            "avatar_url": "https://avatars.githubusercontent.com/profvjreddi",
+            "profile": "https://github.com/profvjreddi",
+            "contributions": [
+                "bug",
+                "code",
+                "design",
+                "doc",
+                "test",
+                "tool"
+            ]
+        },
+        {
+            "login": "salmanmkc",
+            "name": "Salman Chishti",
+            "avatar_url": "https://avatars.githubusercontent.com/u/32169182?v=4",
+            "profile": "https://github.com/salmanmkc",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "Pratham-ja",
+            "name": "Pratham Chaudhary",
+            "avatar_url": "https://avatars.githubusercontent.com/u/114498234?v=4",
+            "profile": "https://github.com/Pratham-ja",
+            "contributions": [
+                "code"
+            ]
+        },
+        {
+            "login": "farhan523",
+            "name": "Farhan Asghar",
+            "avatar_url": "https://avatars.githubusercontent.com/u/62025759?v=4",
+            "profile": "https://github.com/farhan523",
+            "contributions": [
+                "bug",
+                "code",
+                "design"
+            ]
+        },
+        {
+            "login": "Shashank-Tripathi-07",
+            "name": "Rocky",
+            "avatar_url": "https://avatars.githubusercontent.com/u/178375647?v=4",
+            "profile": "https://github.com/Shashank-Tripathi-07",
+            "contributions": [
+                "bug",
+                "code",
+                "design",
+                "doc"
+            ]
+        },
+        {
+            "login": "imrehg",
+            "name": "Gergely Imreh",
+            "avatar_url": "https://avatars.githubusercontent.com/u/38863?v=4",
+            "profile": "https://github.com/imrehg",
+            "contributions": [
+                "bug",
+                "doc"
+            ]
+        }
+    ]
+}

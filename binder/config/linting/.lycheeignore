@@ -1,0 +1,28 @@
+# Broken YouTube/DOI links
+https://www.youtube.com/watch?v=MK0SrxBC1xs
+https://doi.org/10.1145/3451349
+
+# Google Slides (unauthorized)
+https://docs.google.com/presentation/
+
+# Localhost and internal IPs
+http://localhost
+http://127.0.0.1
+http://192.168.
+
+# Known 404s and content gates
+https://www.reuters.com/
+https://www.st.com/en/mems-and-sensors/lsm6dsox.html
+https://blog.didomi.io/
+https://www.usgs.gov/
+
+# Anti-bot false positives — sites that block lychee but are live in browser.
+# Verified live manually. See shared/config/.lycheeignore for cross-site versions.
+https://edgeaifoundation.org/
+https://www.edgeaifoundation.org/
+https://www.linkedin.com/
+https://twitter.com/
+https://x.com/
+https://www.forbes.com/
+https://www.wsj.com/
+https://towardsdatascience.com/

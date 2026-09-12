@@ -1,0 +1,195 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Star, CheckCircle2, ExternalLink, X } from "lucide-react";
+import { GithubIcon } from "@/components/GithubIcon";
+import { getStarUrl, markVerified, fetchStarCount } from "@/lib/star-gate";
+
+export default function StarGate({ onVerified }: { onVerified: () => void }) {
+  const [starCount, setStarCount] = useState<number | null>(null);
+  const [retired, setRetired] = useState<"starred" | "honor" | null>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const primaryBtnRef = useRef<HTMLButtonElement>(null);
+  // Holds the 1.5s "thank-you → onVerified" timer so we can cancel it if
+  // the gate unmounts before it fires. Today's parent (practice/page.tsx)
+  // treats a post-unmount onVerified as a no-op, but a future caller could
+  // have onVerified mutate state on a stale tree — clearing on unmount
+  // makes the contract correct rather than accidentally correct.
+  const verifyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchStarCount().then((n) => {
+      if (!cancelled) setStarCount(n);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Clear the verify-delay timer on unmount.
+  useEffect(() => {
+    return () => {
+      if (verifyTimeoutRef.current !== null) {
+        clearTimeout(verifyTimeoutRef.current);
+        verifyTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleStar = () => {
+    window.open(getStarUrl(), "_blank", "noopener,noreferrer");
+    markVerified("starred");
+    setRetired("starred");
+    verifyTimeoutRef.current = setTimeout(onVerified, 1500);
+  };
+
+  const handleAlreadyStarred = () => {
+    markVerified("honor");
+    setRetired("honor");
+    verifyTimeoutRef.current = setTimeout(onVerified, 1500);
+  };
+
+  const handleDismiss = useCallback(() => {
+    markVerified("dismissed");
+    onVerified();
+  }, [onVerified]);
+
+  // Focus management: move focus into the gate on mount, restore it to the
+  // previously-focused element when the gate unmounts. Mirrors the pattern in
+  // KeyboardShortcutsOverlay / CommandPalette.
+  useEffect(() => {
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    const id = setTimeout(() => primaryBtnRef.current?.focus(), 0);
+    return () => {
+      clearTimeout(id);
+      previouslyFocused.current?.focus?.();
+    };
+  }, []);
+
+  // Escape dismisses the gate (counts as a dismiss), and Tab is trapped within
+  // the dialog surface so focus can't escape behind the blocking overlay.
+  useEffect(() => {
+    if (retired) return; // the confirmation panel has no interactive content
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        handleDismiss();
+        return;
+      }
+      if (e.key !== "Tab" || !surfaceRef.current) return;
+      const focusables = surfaceRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [retired, handleDismiss]);
+
+  if (retired) {
+    return (
+      <div
+        className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="stargate-retired-title"
+      >
+        <div className="max-w-md w-full bg-background border border-border rounded-2xl p-8 shadow-lg text-center">
+          <div className="w-16 h-16 rounded-full bg-accentGreen/10 border border-accentGreen/30 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-8 h-8 text-accentGreen" />
+          </div>
+          <h2 id="stargate-retired-title" className="text-xl font-bold text-textPrimary mb-2">Thank you.</h2>
+          <p className="text-sm text-textSecondary">
+            {retired === "starred"
+              ? "That signal matters more than you know."
+              : "Appreciated. Back to your questions."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const formattedCount = starCount !== null ? starCount.toLocaleString() : null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="stargate-title"
+    >
+      <div ref={surfaceRef} className="relative max-w-md w-full bg-background border border-border rounded-2xl p-8 shadow-lg">
+        {/* Close (X) — counts as dismiss */}
+        <button
+          onClick={handleDismiss}
+          aria-label="Close"
+          className="absolute top-3 right-3 p-1.5 rounded-md text-textTertiary hover:text-textPrimary hover:bg-surface transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {/* Header */}
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <Star className="w-5 h-5 text-accentAmber" />
+          <h2 id="stargate-title" className="text-xl font-bold text-textPrimary">Our only ask.</h2>
+        </div>
+        <p className="text-sm text-textSecondary text-center mb-5 leading-relaxed">
+          StaffML, the textbook, TinyTorch, the hardware kits — all free, forever.
+        </p>
+
+        {/* Live star count + the why */}
+        <div className="bg-surface border border-border rounded-lg p-4 mb-6 text-center">
+          {formattedCount !== null ? (
+            <>
+              <div className="text-2xl font-bold text-textPrimary leading-tight">
+                {formattedCount} <span className="text-accentAmber">★</span>
+              </div>
+              <div className="text-[11px] font-mono uppercase tracking-wide text-textTertiary mt-0.5">
+                stargazers so far
+              </div>
+            </>
+          ) : (
+            <div className="text-sm text-textTertiary">Joined by thousands of stargazers.</div>
+          )}
+          <p className="text-[12px] text-textSecondary mt-3 leading-relaxed">
+            Every star tells universities, publishers, and funders that AI engineering
+            education matters. Goal: 100,000 ★ — one million engineers by 2030.
+          </p>
+        </div>
+
+        {/* Primary CTA */}
+        <button
+          ref={primaryBtnRef}
+          onClick={handleStar}
+          className="flex items-center justify-center gap-2 w-full py-3 bg-accentBlue text-white font-bold rounded-lg text-sm hover:opacity-90 transition-opacity mb-2"
+        >
+          <GithubIcon className="w-4 h-4" />
+          Star on GitHub
+          <ExternalLink className="w-3 h-3 opacity-70" />
+        </button>
+
+        {/* Secondary CTA — honor system */}
+        <button
+          onClick={handleAlreadyStarred}
+          className="w-full py-2.5 bg-surface border border-border text-textPrimary font-medium rounded-lg text-sm hover:bg-surfaceHover transition-colors"
+        >
+          I already starred
+        </button>
+
+        {/* Footer note */}
+        <p className="text-[11px] text-textMuted text-center mt-5">
+          You won&apos;t see this again.
+        </p>
+      </div>
+    </div>
+  );
+}

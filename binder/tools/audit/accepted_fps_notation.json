@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "description": "Persistent accept-list for notation-consistency scanner false positives / intentional exceptions.",
+  "entries": []
+}

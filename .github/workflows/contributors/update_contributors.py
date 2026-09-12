@@ -1,3 +1,28 @@
+import time
+#!/usr/bin/env python3
+"""
+Update contributors from GitHub API.
+
+This script queries the GitHub API to find all contributors to the repository
+and updates the root .all-contributorsrc file with their information.
+
+Features:
+- Fetches contributors from GitHub commit history
+- Resolves email addresses to GitHub usernames
+- Generates gravatar URLs for contributors without GitHub avatars
+- Excludes bots and specified users
+- Merges new contributors with existing ones
+
+Usage:
+    python update_contributors.py
+
+Environment variables:
+    GITHUB_TOKEN: Required. GitHub personal access token for API access.
+
+Note: This script updates the ROOT .all-contributorsrc file only.
+For per-project configs, use scan_contributors.py instead.
+"""
+
 import os
 import json
 import random
@@ -153,13 +178,33 @@ def merge_email_addresses(row, col1, col2):
 
 def main(_):
     token = os.environ["GITHUB_TOKEN"]
+    # Get BOOK_QUARTO from environment variable, fallback to default
+    book_quarto = os.environ.get("BOOK_QUARTO", "books/")
     headers = {"Authorization": f"token {token}"}
     data = []
     next_page = f"https://api.github.com/repos/{OWNER}/{REPO}/commits?sha={BRANCH}&per_page={RESULTS_PER_PAGE}"
     last_page = None
     while next_page != last_page:
         print(f"Fetching page: {next_page}")
-        res = requests.get(next_page, headers=headers)
+        
+        # Add retry logic for 502/503/504 errors
+        max_retries = 3
+        retry_delay = 5
+        for attempt in range(max_retries):
+            res = requests.get(next_page, headers=headers)
+            if res.status_code == 200:
+                break
+            elif res.status_code in [502, 503, 504]:
+                logging.warning(f"GitHub API request failed with status {res.status_code} (Attempt {attempt+1}/{max_retries}). Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+                retry_delay *= 2
+            else:
+                break
+                
+        if res.status_code != 200:
+            logging.error(f"GitHub API request failed with status {res.status_code}: {res.text}")
+            raise RuntimeError(f"Failed to fetch commits: {res.status_code}")
+            
         data.extend(res.json())
         next_page = res.links.get("next", {}).get("url", None)
         last_page = res.links.get("last", {}).get("url", None)
@@ -269,7 +314,7 @@ def main(_):
                 ]
         else:
             logging.error(
-                "Could not find user data for commit: " f"{row['commit_message']}"
+                f"Could not find user data for commit. Username: {row.get('username', 'N/A')}, Email: {row.get('email_address', 'N/A')}"
             )
 
     co_authors_with_username = co_authors_df[~co_authors_df["username"].isna()]
@@ -290,7 +335,7 @@ def main(_):
     ) + merged_df["commit_count"].fillna(0)
 
     # Merge user full name columns
-    merged_df["user_full_name"] = merged_df["user_full_name"] = merged_df.apply(
+    merged_df["user_full_name"] = merged_df.apply(
         merge_user_full_names,
         col1="user_full_name_commit",
         col2="user_full_name_co",
@@ -334,7 +379,7 @@ def main(_):
     ) + merged_df["co_author_count"].fillna(0)
 
     # Merge user full name columns
-    merged_df["user_full_name"] = merged_df["user_full_name"] = merged_df.apply(
+    merged_df["user_full_name"] = merged_df.apply(
         merge_user_full_names,
         col1="user_full_name",
         col2="user_full_name_co_no_user",
@@ -343,17 +388,8 @@ def main(_):
 
     # Remove unnecessary columns
     merged_df = merged_df.drop(
-        columns=["_merge", "co_author_count", "username_co_no_user"]
+        columns=["_merge", "co_author_count", "username_co_no_user", "user_full_name_co_no_user"]
     )
-
-    # Merge the user full name columns
-    merged_df["user_full_name"] = merged_df.apply(
-        merge_user_full_names,
-        col1="user_full_name",
-        col2="user_full_name_co_no_user",
-        axis=1,
-    )
-    merged_df = merged_df.drop(columns=["user_full_name_co_no_user"])
 
     # Get name length to figure out which full name to use
     merged_df = merged_df.assign(name_length=merged_df["user_full_name"].str.len())
@@ -413,7 +449,14 @@ def main(_):
     final_result = dict(
         projectName=REPO,
         projectOwner=OWNER,
-        files=["quarto/contents/frontmatter/acknowledgements/acknowledgements.qmd", "README.md"],
+        files=[
+            # The rendered acknowledgements are the per-volume files; a shared
+            # contents/frontmatter/acknowledgements/ copy existed but no Quarto config
+            # rendered it, so contributor updates never reached the book (fixed 2026-09-07).
+            f"{book_quarto}/vol1/frontmatter/acknowledgements.qmd",
+            f"{book_quarto}/vol2/frontmatter/acknowledgements.qmd",
+            "README.md",
+        ],
         contributors=[
             dict(
                 login=(
@@ -445,4 +488,10 @@ def main(_):
 
 
 if __name__ == "__main__":
-    app.run(main)
+    try:
+        app.run(main)
+    except Exception as e:
+        logging.error(f"Script failed with error: {e}")
+        import traceback
+        logging.error(traceback.format_exc())
+        raise
